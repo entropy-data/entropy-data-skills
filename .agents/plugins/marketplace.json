@@ -1,0 +1,21 @@
+{
+  "name": "entropy-data-skills",
+  "interface": {
+    "displayName": "Entropy Data Skills",
+    "shortDescription": "Coding-agent plugins from Entropy Data."
+  },
+  "plugins": [
+    {
+      "name": "entropy-data-skills",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/entropy-data/entropy-data-skills.git"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Data"
+    }
+  ]
+}

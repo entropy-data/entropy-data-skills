@@ -1,0 +1,13 @@
+{
+  "name": "entropy-data-skills",
+  "version": "0.1.0",
+  "description": "Ready-made analyses for Entropy Data: governance landscape report, duplicate data products, PII exposure, access review, data product health, contract change review, test failure root cause, and data discovery.",
+  "author": {
+    "name": "Entropy Data",
+    "url": "https://entropy-data.com"
+  },
+  "homepage": "https://github.com/entropy-data/entropy-data-skills",
+  "repository": "https://github.com/entropy-data/entropy-data-skills",
+  "license": "MIT",
+  "keywords": ["entropy-data", "data-governance", "data-product", "data-contract", "data-mesh", "odcs", "odps"]
+}
