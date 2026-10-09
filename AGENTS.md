@@ -24,7 +24,7 @@ Every skill verifies the CLI connection first (`entropy-data connection test`, s
 
 ## Conventions when running skills
 
-- **Read-only by default.** Only `list`, `get`, `yaml`, `changes`, `search query`, `star-status`, `schemas get`, `organization get`, `connection test|list`, and `export dir` run without asking. Every other command needs the user's explicit confirmation, naming the exact resources.
+- **Read-only by default.** Only `list`, `get`, `yaml`, `branches changes`, `search query`, `semantics search`, `star-status`, `events poll`, `schemas get`, `organization get`, `connection test|list`, and `export dir` run without asking. Every other command needs the user's explicit confirmation, naming the exact resources.
 - **Never reveal secrets.** Never run `connection get --show-api-key`, `integrations get`, or `git-credentials get|list`, and never pass `--api-key` on the command line.
 - **Do not notify people** (comments, messages, emails) without explicit confirmation; draft instead.
 - **Evidence for every finding**, and label heuristic findings as "possible".

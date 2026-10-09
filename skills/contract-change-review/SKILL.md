@@ -18,12 +18,15 @@ Follow the `entropy-data-cli` skill, Step 2.
 
 ## Step 1: Understand the planned change
 
-Identify the data product, output port, and data contract (`entropy-data search query "<name>"` if unclear). Then get the change in one of these forms:
+Identify the data product, output port, and data contract (`entropy-data datacontracts get <id>` for a given id, `entropy-data search query "<name>"` if unclear). Save the published contract in every case:
 
-- a pull request or local edit of an ODCS file: get the changed file from the working tree or the PR (`git diff`, `gh pr diff <n>`), and compare it with the published contract:
-  ```bash
-  entropy-data datacontracts yaml <contract-id> --file "$SCRATCH/published.odcs.yaml"
-  ```
+```bash
+entropy-data datacontracts yaml <contract-id> --file "$SCRATCH/published.odcs.yaml"
+```
+
+Then get the change in one of these forms:
+
+- a pull request or local edit of an ODCS file: get the changed file from the working tree or the PR (`git diff`, `gh pr diff <n>`), and compare it with the published contract.
 - an existing contract branch:
   ```bash
   entropy-data datacontracts branches changes <contract-id> <branch> -o json
@@ -43,7 +46,7 @@ For each changed element, decide breaking or non-breaking for consumers:
 | Changing the server or location of an output port | Adding a new output port |
 | Deprecating or retiring the product | |
 
-Semantic changes (same name, different meaning or unit) are breaking even though no schema tool catches them. Ask the user about them explicitly.
+Semantic changes (same name, different meaning or unit) are breaking even though no schema tool catches them. Ask the user about them explicitly. For a removed or renamed field, search the whole contract and product for its name: table-level quality rules, SLA `element`s, `context` instructions, and descriptions that reference it change meaning too.
 
 Recommend the version bump: major for breaking, minor for additive, patch for documentation only.
 
@@ -52,22 +55,22 @@ Recommend the version bump: major for breaking, minor for additive, patch for do
 ```bash
 entropy-data access list --provider-dataproduct <id> -o json
 entropy-data usage list --data-product-id <id> -o json
+entropy-data lineage list -o json                                    # organization-wide, once
+entropy-data test-results list --data-contract-id <contract-id> -o json
 ```
 
-Consider active agreements and also requested and upcoming ones: they are consumers too, soon.
+Consider active agreements and also requested and upcoming ones (approved, `info.startDate` in the future): they are consumers too, soon. Recent test results show whether the affected fields already fail, which consumers may already feel.
+
+Lineage `inputs` are physical datasets (namespace and name, for example a Snowflake table). Find the port's physical location from the contract's `servers` and from the `outputs` of the provider's own jobs; they can differ, so match on schema and table names. Then search the `inputs` of all lineage events for it: this finds readers with and without an agreement.
 
 For each consumer:
 
-- Who it is (team, user, or data product) and their stated purpose.
-- For a consumer data product: its lineage shows whether it reads the affected output port or dataset. A provider's own lineage only shows its own jobs, so look at the consumer's:
-  ```bash
-  entropy-data lineage list --data-product-id <consumer-id> -o json
-  ```
-  Check whether the input datasets of its jobs reference the provider's output dataset and, if column-level lineage is present, the affected fields. Then fetch that consumer's own consumers (`access list --provider-dataproduct <consumer-id>`) for the second level of impact.
+- Who it is (team, user, or data product) and their stated purpose. A `consumer.dataProductId` that does not exist (for example a placeholder such as `unknown`) means the consumer is the team or user: report it that way and do not look up lineage for it.
+- For a consumer data product: whether its jobs read the affected dataset and, if column-level lineage is present, the affected fields. Filter events by `run.facets.entropy_data.dataProductId` locally. Then fetch that consumer's own consumers (`access list --provider-dataproduct <consumer-id>`) for the second level of impact, unless column lineage shows that the affected fields are not propagated.
 - Whether usage shows that they read the affected fields. Usage traces can contain query text; search it for the field names with a script and never print raw queries.
-- Usage by callers without any agreement, if traces identify the caller: these are unknown consumers.
+- Lineage readers and usage spans with no matching agreement, and spans whose agreement is on another port: these are unknown or unexplained consumers. Report them as such.
 
-If there is no lineage or usage data for a consumer, say so: its impact is then "possible", not "confirmed".
+If there is no lineage or usage data for a consumer, say so: its impact is then "possible", not "confirmed". Usage covers a limited period (see the `entropy-data-cli` skill); name it.
 
 ## Step 4: Report
 
@@ -77,7 +80,7 @@ If there is no lineage or usage data for a consumer, say so: its impact is then 
    - **red**: breaking changes that usage or lineage shows active consumers rely on, or retirement with active consumers.
 2. **Change summary**: each change, breaking or not, recommended version.
 3. **Affected consumers**: table with consumer, owning team, purpose, impact (confirmed by usage or lineage, or possible), second-level dependents.
-4. **Rollout recommendation**: for breaking changes, the safer path, for example add the new field, mark the old one deprecated in the contract, give consumers a deadline, then remove it in a new major version or a new output port. For retirement: set status to `deprecated`, notify consumers, wait for agreements to end, then retire.
+4. **Rollout recommendation**: for breaking changes, the safer path, for example add the new field, mark the old one deprecated in the contract, give consumers a deadline (at least the contract's notice period, such as a `noticePeriod` custom property, if set), then remove it in a new major version or a new output port (prefer a new port when the port name carries a version). For retirement: set status to `deprecated`, notify consumers, wait for agreements to end, then retire.
 5. **Notification draft**: a short message per consuming team listing exactly what changes for them and when. Do not send it.
 
 On a pull request, the PR comment contains only the verdict, the breaking changes, and counts ("affects 4 consumers in 3 teams, 2 confirmed by lineage"). Consumer names and purposes stay in the local report, because everyone with access to the repository can read the comment. Post it only if the user asks, with their git host's CLI (for example `gh pr comment`), after showing it.

@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Coding-agent plugins from Entropy Data.",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {
       "name": "entropy-data-skills",
       "description": "Ready-made analyses for Entropy Data: governance landscape report, duplicate data products, PII exposure, access review, data product health, contract change review, test failure root cause, and data discovery.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "."
     }
   ]

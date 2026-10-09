@@ -25,32 +25,32 @@ Ask briefly, or extract from the request:
 - The question or use case, and the business entities involved (customers, orders, shipments).
 - Required fields or metrics, the grain (per order, per customer per day), the time range, and the freshness needed.
 - Constraints: where the data must be consumed (platform, region), and whether personal data is acceptable.
+- Who consumes it: a team, a data product, or the user (needed for an access request in Step 5).
 
 ## Step 2: Search
 
-Search several ways and merge the results:
+Search matches keywords, so search single entity words, fields, and synonyms (for example "customer", "orders", "retention"), not the use case as a sentence. Merge the results:
 
 ```bash
-entropy-data search query "<use case in words>" -o json
 entropy-data search query "<entity>" --resource-type DATA_PRODUCT -o json
 entropy-data search query "<field or metric>" --resource-type DATA_CONTRACT -o json
-entropy-data search query "<entity>" --resource-type SEMANTIC_CONCEPT -o json
+entropy-data semantics namespaces list -o json
+entropy-data semantics search <namespace> "<entity>" -o json
 ```
 
-For semantic concepts found, read them (`entropy-data semantics concepts get <namespace> <id> -o json`) and use their names, labels, and descriptions as further search terms. Within a known namespace, `entropy-data semantics search <namespace> "<term>"` finds related concepts.
+For semantic concepts found, read them (`entropy-data semantics concepts get <namespace> <id> -o json`) and use their names, labels, and descriptions as further search terms.
 
-Keep products with status `active`, and mention `draft` or `proposed` ones separately. Exclude `deprecated` and `retired` ones, but say if the best match is deprecated.
+Search results carry no status. Take it, and everything for Step 3, from one `export dir` of `dataproducts,datacontracts,access,teams` (see "Collecting data at scale" in the `entropy-data-cli` skill). Keep products with status `active`, and mention `draft` or `proposed` ones separately. Exclude `deprecated` and `retired` ones, but say if the best match is deprecated.
 
 Rank the merged results by relevance and status, and evaluate only the top 5 to 8 in Step 3.
 
 ## Step 3: Evaluate each candidate
 
+Use the export for products, contracts, and agreements. Per candidate, fetch only what the export lacks:
+
 ```bash
-entropy-data dataproducts get <id> -o json
-entropy-data datacontracts yaml <contract-id>
 entropy-data test-results list --data-contract-id <contract-id> -o json
 entropy-data example-data list --data-product-id <id> -o json      # use column names and row shape only, never print values
-entropy-data access list --provider-dataproduct <id> -o json
 ```
 
 Score each output port:
@@ -58,15 +58,17 @@ Score each output port:
 | Criterion | Question |
 |---|---|
 | Coverage | Which required fields or metrics are present, which are missing? |
-| Grain and history | Does the grain match (key fields; the shape of the example data, if present)? Is the needed time range available? |
-| Semantics | Do field descriptions and linked definitions mean what the use case needs? |
-| Quality | Pass rate of contract tests over the history; recurring failures |
-| Freshness | Freshness or SLA in the contract versus the need; date of the last test |
-| Terms of use | Do the usage terms and limitations allow this purpose? |
-| Sensitivity | Classified or personal fields that would need justification |
-| Adoption | Number and kind of existing consumers: a widely used product is battle-tested |
-| Ownership | Owning team and support channel present |
+| Grain and history | Does the grain match (key fields; the shape of the example data, if present)? Is the needed time range available (history versus latest state, `retention` SLA)? |
+| Semantics | Do field descriptions and linked concepts mean what the use case needs? |
+| Quality | Pass rate of contract tests over the history; recurring failures. With only a few runs, say "too few runs" instead of a rate |
+| Freshness | `freshness` and `frequency` in `slaProperties` versus the need; date of the last test |
+| Terms of use | Do `description.usage` and `limitations` allow this purpose? |
+| Sensitivity | Classified fields, PII tags, linked concepts' classification, and example columns the contract does not declare |
+| Adoption | Number and kind of existing consumers: a widely used product is battle-tested; note failed provisioning |
+| Ownership | Owning team (`team.name`) and support channel (`support[]`) present |
 | Location | Server type and location match where the data must be consumed |
+
+If the need spans several entities, recommend a combination: name the join keys and the platform of each part.
 
 ## Step 4: Output
 
@@ -79,7 +81,7 @@ If no candidate covers the need, say so plainly and describe the gap. That gap i
 If the user picks a candidate and wants access:
 
 ```bash
-entropy-data access request <data-product-id> <output-port-id> --purpose "<specific purpose>" \
+entropy-data access request <data-product-id> <output-port-name> --purpose "<specific purpose>" \
   [--consumer-team <team-id> | --consumer-dataproduct <id> | --consumer-user <user-id>]
 ```
 

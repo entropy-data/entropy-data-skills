@@ -1,6 +1,6 @@
 {
   "name": "entropy-data-skills",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ready-made analyses for Entropy Data: governance landscape report, duplicate data products, PII exposure, access review, data product health, contract change review, test failure root cause, and data discovery.",
   "author": {
     "name": "Entropy Data",

@@ -21,16 +21,20 @@ Follow "Collecting data at scale" in the `entropy-data-cli` skill: one `export d
 
 The example data in the export may contain real personal data. Never print or read it raw. All scanning in Step 3 is done by a script that outputs only masked matches. Delete the scratch directory at the end.
 
-Work out from the classification schemes which levels count as "sensitive" in this organization. If unclear, ask the user once.
+Classifications and PII tags: see "Where things live" in the `entropy-data-cli` skill. If an organization policy assigns personal data to a specific classification, that classification is the required one. Otherwise treat the upper half of the scheme (by `level`) as sensitive, for example `confidential` and `restricted`. If unclear, ask the user once.
+
+Example data: see "Where things live". The script must flatten nested objects and lists, and use the port's `name` to join to agreements.
 
 ## Step 2: Scan contract fields
 
-For every property in every contract schema, flag possible personal data by name and description: email, phone, mobile, first/last/full name, address, street, zip/postal code, birth, gender, nationality, iban, account number, card, ssn, national id, passport, tax id, salary, health, diagnosis, ip address, device id, cookie, location, latitude/longitude.
+For every property in every contract schema, including nested ones, flag possible personal data by name and description: email, phone, mobile, first/last/full name, address, street, zip/postal code, birth, gender, nationality, iban, account number, card, ssn, national id, passport, tax id, salary, health, diagnosis, ip address, device id, cookie, location, latitude/longitude. Exclude reference ids and type lookups (names ending in `id`, `type`, `style`), and count a bare `name` or `address` only in a person or customer context. Report quasi-identifiers and pseudonymized fields (birth year, zip code, hashed or truncated emails) as lower-ranked findings.
 
 A finding is raised when such a field:
 
-- has no classification, or a non-sensitive one, or
-- is classified as sensitive, and a policy explicitly requires something for such fields (for example a retention period or a usage restriction in the contract), and the contract does not provide it. Quote the policy sentence.
+- has no classification and no PII tag ("unclassified"), only a PII tag ("tagged but not classified"), or a classification below the required one, or
+- is classified as sensitive, and a policy explicitly requires something for such fields (for example a retention period or a usage restriction in the contract), and the contract does not provide it. Quote the policy sentence. Policies can also set rules for the consumers, such as a purpose that justifies personal data: check those in Step 4.
+
+Contract property `examples` are visible to everyone like example data: scan them with the Step 3 script as well.
 
 ## Step 3: Scan example data
 
@@ -44,12 +48,15 @@ Example data is shown to everyone who can see the product, so real personal data
 | Card number | 13 to 19 digits passing the Luhn check |
 | Birth date | dates in a column whose name suggests birth |
 | IPv4 | `\b(\d{1,3}\.){3}\d{1,3}\b` in a column whose name suggests ip or address, with each octet at most 255 |
+| Name, street address | non-empty text in a column whose name suggests a person's name or a street address |
 
-Values from obviously synthetic domains (`example.com`, `test`, `foo`) are low confidence. Report them separately.
+Values from obviously synthetic sources (`example.com` and similar domains, `test`, `foo`, reserved phone or IP ranges, placeholder names such as "John Doe") are low confidence; judge each value, since one synthetic column does not make the row synthetic. Values that are already masked (containing `***`) are not leaks. Report both separately.
+
+Also compare the example columns with the contract's fields: personal data in columns the contract does not declare (for example on a port described as without personal data) is a finding.
 
 ## Step 4: Who can see it
 
-For each exposure, list the active access agreements on the product's output port: consumer, consumer type, purpose. Exposures with many consumers, individual users as consumers, or vague purposes rank higher. In the chat summary, count individual users ("2 individual users"); put their identities only in the report file.
+For each exposure, list the active access agreements on the product's output port: consumer, consumer type, purpose. Check each purpose against the contract's `description.usage` and `description.limitations` and against policies on consumers. Rank example data leaks first (visible to everyone), then exposures with many consumers, individual users as consumers, vague purposes, or purposes that conflict with the limitations. Contracts that no product references have no consumers: list them last. In the chat summary, count individual users ("2 individual users"); put their identities only in the report file.
 
 ## Step 5: Output
 
@@ -58,7 +65,7 @@ Ranked list, highest risk first:
 | Rank | Product | Team | Contract / schema / field | Finding | Masked sample | Consumers |
 |---|---|---|---|---|---|---|
 
-Mask samples by keeping the shape only, for example `j***@e***.com`, `+49 *** *** **12`, `DE** **** **** **** **34`.
+Mask samples by keeping the shape only, for example `j***@e***.com`, `+49 *** *** **12`, `DE** **** **** **** **34`, `J*** D***` for names, `**** **-**-**` for dates.
 
 Then a summary: number of possible PII fields, how many are unclassified, example data entries with real-looking personal data, and the teams with the most findings. Map each finding type to a fix the owning team can make: classify the field, replace example data with synthetic rows, restrict terms of use.
 
