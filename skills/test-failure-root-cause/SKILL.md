@@ -17,39 +17,36 @@ Follow the `entropy-data-cli` skill, Step 2.
 
 ## Step 1: Identify the failure
 
-From what the user gives (a contract id, a product name, or a link). For an id, try `entropy-data datacontracts get <id>` before searching. Find the provider product through `outputPorts[].contractId` (a contract does not name its product), for example with `dataproducts list` pages or an export.
+From what the user gives (a contract id, a product name, or a link). For an id, try `entropy-data datacontracts get <id>` before searching. Find the provider product through `outputPorts[].contractId` (a contract does not name its product) in one `export dir` of `dataproducts,datacontracts,access,sourcesystems` (see "Collecting data at scale" in the `entropy-data-cli` skill).
 
 ```bash
-entropy-data test-results list --data-contract-id <contract-id> -p 0 -o json
-entropy-data test-results get <test-result-id> -o yaml
+entropy-data test-results list --data-contract-id <contract-id> --since <date> --all -o json   # sort by timestampStart yourself
 ```
 
-For "the latest failures" across the organization, `entropy-data events poll -o json` returns recent events; test result events carry their status.
+The list already holds full checks and logs; `test-results get <id>` is only needed when the user gives a result id. For "the latest failures" across the organization, use `entropy-data test-results list --since <date> --all -o json`; `events poll` events carry only the result id and status, stamped with ingestion time.
 
-The result fields are in "Where things live" in the `entropy-data-cli` skill. The explanation of a failing check is in `reason`, and `failedNumber`/`totalNumber` show its extent. For `error` results, read `logs`. A list without `--branch` holds only results on the contract itself. Checks can quote data (`failedSamples`, custom SQL): follow the personal data rule and never print raw values.
+The result fields are in "Where things live" in the `entropy-data-cli` skill. The explanation of a failing check is in `reason`, and `failedNumber`/`totalNumber` show its extent. Join each check to its contract quality rule (by model, field, and `qualityCheckDefinition`) to get the rule's `severity`, so blocking failures and warnings stay apart. Several checks can report one defect (for example a required check and a null check on the same field): count it once. For `error` results, read `logs`. A list without `--branch` holds only results on the contract itself. Checks can quote data (`failedSamples`, custom SQL): follow the personal data rule and never print raw values.
 
 ## Step 2: Collect context
 
 ```bash
 entropy-data datacontracts yaml <contract-id>                        # current contract
-entropy-data dataproducts get <provider-id> -o json                  # input ports, other output ports, owner
-entropy-data lineage list -o json                                    # organization-wide, once
-entropy-data access list --provider-dataproduct <provider-id> -o json
+entropy-data lineage list --since <date> --all -o json               # organization-wide, once
 ```
 
-For each input data product, fetch its output-port contract's latest test results too: upstream failures propagate. Also fetch the latest results of the provider's other output-port contracts: if they pass, the cause is specific to this port.
+The provider product (input ports, other output ports, owner) and its agreements are in the export. For each input data product, fetch its output-port contract's latest test results too: upstream failures propagate. Also fetch the latest results of the provider's other output-port contracts: if they pass, the cause is specific to this port, and their `totalNumber` from the same run shows row count differences.
 
-If the product has no input ports, its upstream is in the `inputs` of its own lineage jobs (filter on `run.facets.entropy_data.dataProductId`), together with their schema facets and the job's `sql` facet. Check that the lineage datasets match the contract's `servers` (database, schema) before using them as evidence.
+If the product has no input ports, its upstream is in the `inputs` of its own lineage jobs (filter on `run.facets.entropy_data.dataProductId`), together with their schema facets and the job's `sql` facet. Match lineage datasets to the contract on schema and table names (see "Where things live") and name a database mismatch as a caveat. An upstream table that no product covers: look for a source system or a contract whose `servers` match it; otherwise report the upstream as ungoverned.
 
 ## Step 3: Analyze
 
 Answer these questions with evidence:
 
 1. **What exactly fails?** Group failing checks by model and field. Distinguish schema checks (missing field, wrong type), quality checks (nulls, uniqueness, ranges, freshness, row counts), and execution errors (connection, permissions, timeouts). `error` results usually mean the test could not run, not that the data is wrong.
-2. **Since when?** Page through the test history, sort by timestamp yourself, and walk back to the last passing run. Note the first failing run. Compare which checks fail in each run: a different set of failing checks is a separate incident, so do not merge it into one.
+2. **Since when?** Sort the test history by `timestampStart` yourself, per server (`--server` narrows it), and walk back to the last passing run. Note the first failing run. Compare which checks fail in each run: a different set of failing checks is a separate incident, so do not merge it into one. Gaps in the usual test schedule are evidence too.
 3. **What changed in between?**
-   - The contract: compare the contract version of the last passing and the first failing run. The CLI returns only the current contract. A contract can also be edited without a version change: compare the thresholds quoted in each check's `reason` with the current contract. If the contract has a git connection (`entropy-data datacontracts gitconnection get <contract-id>`) and the repository is available locally, diff the contract file in git history. Otherwise report "contract version changed from X to Y, diff not available".
-   - The pipeline: lineage runs between the two test runs. `lineage list` has no time filter: filter the organization-wide list by product, `eventType` (`COMPLETE`, `FAIL`), and `eventTime` with a script. A failed or missing run points at the pipeline; a successful run with new output points at changed input data.
+   - The contract: compare the contract version of the last passing and the first failing run. The CLI returns only the current contract. A contract can also be edited without a version change: compare the thresholds quoted in each check's `reason` with the current contract. Passing checks have no `reason`, so this works only for failing checks. If the contract has a git connection (`entropy-data datacontracts gitconnection get <contract-id>`, with a non-empty `lastHash`) and the repository is checked out in the working directory, diff the contract file in git history. Otherwise report "contract version changed from X to Y, diff not available".
+   - The pipeline: lineage runs of the product between the two test runs: filter the list from Step 2 by `run.facets.entropy_data.dataProductId`, `eventTime`, and `eventType` (`COMPLETE`, `FAIL`). Make sure its `--since` reaches back to the last passing run. A failed or missing run points at the pipeline; a successful run with new output points at changed input data. If lineage has no events at all in that window, say "no lineage in the window", which is not evidence of a missing run. The `sql` facet shows what the job transforms, and `sourceCodeLocation` points at the pipeline code and its version.
    - Upstream: input data products whose own tests started failing at the same time.
    - The server: a different `server` between runs points at environment configuration.
 4. **Is it the data or the test?** Freshness and row-count checks fail when a pipeline did not run. Uniqueness and null checks fail on changed upstream data. Type checks fail on schema drift.

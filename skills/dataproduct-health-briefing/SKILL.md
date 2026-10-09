@@ -24,16 +24,17 @@ Ask for the team. If the user does not know it, ask for their email address (do 
 entropy-data teams list --member <email> -o json
 ```
 
-Then list the products: page `entropy-data dataproducts list -p <n> -o json` into the scratch directory and filter on `team.name` with a script. If the user names a domain, include its sub-teams (teams whose `parent` is the domain).
+Then run one `export dir` of `dataproducts,datacontracts,access,teams,policies,certifications,classification-schemes` (see "Collecting data at scale" in the `entropy-data-cli` skill) and filter products on `team.name` with a script. Take only the named team; include sub-teams (teams whose `parent` is it) only if the user names a domain.
 
 Confirm the list of products with the user.
 
 ## Step 2: Collect per product
 
+Products, contracts, agreements, and policies come from the export. Per product, with `<since>` 30 days ago:
+
 ```bash
-entropy-data dataproducts get <id> -o json
-entropy-data access list --provider-dataproduct <id> -o json
-entropy-data usage list --data-product-id <id> -o json
+entropy-data usage list --data-product-id <id> --since <since> --all -o json
+entropy-data lineage list --data-product-id <id> --since <since> --all -o json
 entropy-data costs list --data-product-id <id> -o json
 entropy-data example-data list --data-product-id <id> -o json      # check presence only, never print values
 entropy-data dataproducts star-status <id> -o json        # skip on error
@@ -42,25 +43,22 @@ entropy-data dataproducts star-status <id> -o json        # skip on error
 Per output port contract:
 
 ```bash
-entropy-data datacontracts get <contract-id> -o json
-entropy-data test-results list --data-contract-id <contract-id> -p 0 -o json   # page until empty, keep the last 30 days
+entropy-data test-results list --data-contract-id <contract-id> --since <since> --all -o json
 ```
 
-And once: `entropy-data policies list -o json`.
-
-The briefing covers a handful of products, so per-product calls are fine. Write raw output to a scratch directory and summarize with a script; usage traces can contain query text with literal values, and example data contains raw values, so never print them. Join agreements to ports on `provider.outputPortId` = the port's `name`.
+The briefing covers a handful of products, so per-product calls are fine. Write raw output to the scratch directory and summarize with a script; usage traces can contain query text with literal values, and example data contains raw values, so never print them. Join agreements to ports on `provider.outputPortId` = the port's `name`. Take agreements where the owner's products are providers and also where they are consumers (`consumer.dataProductId`).
 
 ## Step 3: Analyze
 
-**Quality**: latest result per contract; pass rate over the last 30 days; checks that fail repeatedly; time since the last run. With fewer than about five runs, report "no trend available" instead of a pass rate. A product whose tests stopped running is a finding even if the last run passed: the last run is older than a few times the contract's `frequency` SLA, or than two days if there is none. To explain a failure, hand off to `test-failure-root-cause`.
+**Quality**: latest result per contract; pass rate over the last 30 days; checks that fail repeatedly; time since the last run. With fewer than about five runs, report "no trend available" instead of a pass rate. A product whose tests stopped running is a finding even if the last run passed: the last run is older than three times the contract's `frequency` SLA (free text such as "hourly" or "daily"), or than two days if there is none. Say which cadence you assumed. If lineage shows pipeline runs after the last test, the tests stopped, not the pipeline. Output ports without a contract have no tests: list them under gaps. To explain a failure, hand off to `test-failure-root-cause`.
 
-**Consumers**: active agreements by consuming team and data product; their purposes, grouped (for example "4 reporting, 2 ML features, 1 regulatory"); agreements ending soon; failed or pending provisioning (`provisioning.status` and `diagnostics`); purposes of active agreements that conflict with the contract's terms of use. Products of the same owner often depend on each other only through agreements (input ports are often empty), so a failure there can break the owner's own chain.
+**Consumers**: active agreements by consuming team and data product; their purposes, grouped (for example "4 reporting, 2 ML features, 1 regulatory"); agreements ending soon; failed or pending provisioning (`provisioning.status` and `diagnostics`); purposes of active agreements that conflict with the contract's terms of use. Products of the same owner often depend on each other only through agreements (input ports are often empty), so a failure there can break the owner's own chain. Where the owner's products consume other teams' data, check their purposes the same way, and lineage `inputs` they read without an agreement.
 
-**Usage**: if usage traces are reported, who actually queries the product and how often. Compare with agreements: consumers with access but no usage (candidates for clean-up), and usage spans whose `access.id` matches no active agreement (worth investigating). Spans also carry `user`, `role`, and `rows`; never print `query.preview`.
+**Usage**: if usage traces are reported, who actually queries the product and how often. Compare with agreements, but only for products that report usage at all: consumers with access but no usage in the covered period (candidates for clean-up), and usage spans whose `access.id` matches no active agreement (worth investigating). Spans also carry `user`, `role`, and `rows`; never print `query.preview`.
 
 **Cost**: recorded costs against the number of active consumers and usage. Say "not reported" when there is no data; do not estimate. When usage is not reported, recommend reporting it, since unused access cannot be found otherwise.
 
-**Discoverability**: the product's `description.purpose` and the contract's `description.usage` and `limitations`, example data present, tags, stars. Rate them against the organization's policies on descriptions, if any.
+**Discoverability**: the product's `description.purpose` and the contract's `description.usage` and `limitations`, example data present, tags, stars. Rate them against the organization's policies on descriptions, if any (map older field names as described in "Where things live"). For a certification tag, check the certification's `criteria` against the product and say which are not met.
 
 **Pending access requests**: for each request, read the purpose and roles, the consumer, the contract's terms of use and field classifications, and the organization's policies. Recommend approve, ask for clarification, or reject, citing the clause of the contract or policy. These are recommendations only.
 
