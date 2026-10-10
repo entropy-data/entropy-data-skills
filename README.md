@@ -24,6 +24,10 @@ Each skill is one outcome for one persona: a governance landscape report, a dupl
 | **[Duplicate Data Product Finder](skills/duplicate-dataproduct-finder/SKILL.md)** | monthly | Ranked clusters of duplicate, overlapping, and related data products with evidence and a recommendation. |
 | **[PII Exposure Scanner](skills/pii-exposure-scanner/SKILL.md)** | daily or weekly | Unclassified personal data in contracts, personal data leaking through example data, and who can access it. |
 | **[Access Review](skills/access-review/SKILL.md)** | quarterly | Recertification of all access agreements: vague purposes, stale requests, access to deprecated products, provisioning gaps. |
+| **[Governance Incident Triage](skills/governance-incident-triage/SKILL.md)** | daily or hourly | An always-on governance inbox: what changed since the last run, the governance conditions it caused, prioritized high, medium, low with owner and recommended action. |
+| **[Data Usage Monitor](skills/data-usage-monitor/SKILL.md)** | daily | Usage without a valid agreement, after it ended, bulk extraction of personal data, and sensitive columns read outside the agreed purpose. |
+| **[Semantic Namespace Review](skills/semantic-namespace-review/SKILL.md)** | on demand, quarterly | Proposed improvements to a business ontology (duplicates, descriptions, relationships, missing concepts), put on a namespace branch to review visually in the Entropy Data UI. |
+| **[Unmanaged Data Finder](skills/unmanaged-data-finder/SKILL.md)** | monthly | How much of the imported data estate data products actually govern, ranked ungoverned sensitive tables, broken asset references, and stale imports. |
 
 ### Data Product Owners
 
@@ -92,6 +96,10 @@ Ask in plain language:
 
 - "Create the governance landscape report for our organization."
 - "Do we have duplicate data products?"
+- "What needs governance attention since yesterday?"
+- "Is our customer data used as agreed?"
+- "Which tables in Snowflake are not covered by any data product?"
+- "Review our global semantic namespace and put your proposals on a branch."
 - "Scan for personal data exposure."
 - "How are the data products of team Checkout doing?"
 - "What breaks if I remove `customer_email` from the orders contract?"

@@ -1,7 +1,7 @@
 {
   "name": "entropy-data-skills",
-  "version": "0.1.2",
-  "description": "Ready-made analyses for Entropy Data: governance landscape report, duplicate data products, PII exposure, access review, data product health, contract change review, test failure root cause, and data discovery.",
+  "version": "0.2.0",
+  "description": "Ready-made analyses for Entropy Data: governance landscape report, governance incident triage, data usage monitor, unmanaged data, semantic namespace review, duplicate data products, PII exposure, access review, data product health, contract change review, test failure root cause, and data discovery.",
   "author": {
     "name": "Entropy Data",
     "url": "https://entropy-data.com"
@@ -13,7 +13,7 @@
   "interface": {
     "displayName": "Entropy Data Skills",
     "shortDescription": "Ready-made analyses for governance, data product owners, and builders.",
-    "longDescription": "Outcome-focused analyses on top of the entropy-data CLI. Governance: landscape report, duplicate data product finder, PII exposure scanner, access review. Data product owners: health briefing, contract change review. Data product builders: data discovery and fitness check, test failure root cause analysis. Read-only unless you confirm an action.",
+    "longDescription": "Outcome-focused analyses on top of the entropy-data CLI. Governance: landscape report, incident triage, data usage monitor, unmanaged data finder, semantic namespace review, duplicate data product finder, PII exposure scanner, access review. Data product owners: health briefing, contract change review. Data product builders: data discovery and fitness check, test failure root cause analysis. Read-only unless you confirm an action.",
     "developerName": "Entropy Data",
     "category": "Data",
     "capabilities": ["Read"],
