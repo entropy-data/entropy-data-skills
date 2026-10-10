@@ -74,6 +74,32 @@ copilot plugin marketplace add https://github.com/entropy-data/entropy-data-skil
 copilot plugin install entropy-data-skills@entropy-data-skills
 ```
 
+### Update an installed plugin
+
+New skills and fixes arrive as new plugin versions. Refresh the marketplace, then update the plugin.
+
+Claude Code (restart Claude Code afterwards to load the new version):
+
+```
+claude plugin marketplace update entropy-data-skills
+claude plugin update entropy-data-skills@entropy-data-skills
+```
+
+OpenAI Codex:
+
+```
+codex plugin marketplace upgrade entropy-data-skills
+codex plugin add entropy-data-skills@entropy-data-skills
+```
+
+GitHub Copilot CLI:
+
+```
+copilot plugin update entropy-data-skills@entropy-data-skills
+```
+
+Other agents: `git pull` in your clone of this repository.
+
 ### Any other agent
 
 Clone the repository and point your agent at `skills/`, or reference [`AGENTS.md`](AGENTS.md) from your project's own `AGENTS.md`.
