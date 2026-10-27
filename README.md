@@ -28,6 +28,7 @@ Each skill is one outcome for one persona: a governance landscape report, a dupl
 | **[Data Usage Monitor](skills/data-usage-monitor/SKILL.md)** | daily | Usage without a valid agreement, after it ended, bulk extraction of personal data, and sensitive columns read outside the agreed purpose. |
 | **[Semantic Namespace Review](skills/semantic-namespace-review/SKILL.md)** | on demand, quarterly | Proposed improvements to a business ontology (duplicates, descriptions, relationships, missing concepts), put on a namespace branch to review visually in the Entropy Data UI. |
 | **[Unmanaged Data Finder](skills/unmanaged-data-finder/SKILL.md)** | monthly | How much of the imported data estate data products actually govern, ranked ungoverned sensitive tables, broken asset references, and stale imports. |
+| **[Insights Dashboards and Custom Metrics](skills/insights-dashboards/SKILL.md)** | on demand | Custom metrics in a semantic model and a dashboard that shows them, with the chart types and options of Insights, validated and saved after you confirm. Uses the Insights v2 preview and its API (`ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` in the environment). |
 
 ### Data Product Owners
 
@@ -126,6 +127,7 @@ Ask in plain language:
 - "Is our customer data used as agreed?"
 - "Which tables in Snowflake are not covered by any data product?"
 - "Review our global semantic namespace and put your proposals on a branch."
+- "Add a dashboard for the governance board with the share of well-scored data products by team."
 - "Scan for personal data exposure."
 - "How are the data products of team Checkout doing?"
 - "What breaks if I remove `customer_email` from the orders contract?"

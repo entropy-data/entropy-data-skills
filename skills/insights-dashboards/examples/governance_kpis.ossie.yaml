@@ -1,0 +1,68 @@
+version: 0.2.0.dev0
+name: governance_kpis
+description: The KPIs the data governance board reviews.
+custom_extensions:
+  - vendor_name: ENTROPY_DATA
+    data: '{"label": "Governance KPIs", "owner": "data-governance"}'
+metrics:
+  - name: well_scored
+    description: Share of active data products with a Data Product Score of at least 80.
+    expression:
+      dialects:
+        - dialect: OSSIE_SQL_2026
+          expression: >-
+            100.0 * COUNT(CASE WHEN data_product.status = 'active' AND data_product.score >= 0.8 THEN 1 END)
+            / NULLIF(COUNT(CASE WHEN data_product.status = 'active' THEN 1 END), 0)
+    custom_extensions:
+      - vendor_name: ENTROPY_DATA
+        data: '{"label": "Well-scored data products", "unit": "%"}'
+  - name: published
+    description: Data products published to the marketplace, dated by their publication.
+    expression:
+      dialects:
+        - dialect: OSSIE_SQL_2026
+          expression: COUNT(data_product.data_product_id)
+    custom_extensions:
+      - vendor_name: ENTROPY_DATA
+        data: '{"label": "Published data products", "time": ["data_product.lifecycle_published_to_marketplace_at"]}'
+  - name: published_to_date
+    description: All data products published to the marketplace up to each point in time.
+    expression:
+      dialects:
+        - dialect: OSSIE_SQL_2026
+          expression: COUNT(data_product.data_product_id)
+    custom_extensions:
+      - vendor_name: ENTROPY_DATA
+        data: '{"label": "Published data products to date", "time": ["data_product.lifecycle_published_to_marketplace_at"], "cumulative": true}'
+datasets:
+  - name: data_product
+    source: dp_marketplace_analytics_v1.fct_data_product
+    primary_key: [data_product_id]
+    custom_extensions:
+      - vendor_name: ENTROPY_DATA
+        data: '{"data_product": "entropy-data-marketplace-analytics", "data_contract": "entropy-data-marketplace-analytics-v1", "schema": "fct_data_product"}'
+    fields:
+      - name: status
+        expression: {dialects: [{dialect: OSSIE_SQL_2026, expression: status}]}
+        datatype: String
+        dimension: {is_time: false}
+      - name: score
+        expression: {dialects: [{dialect: OSSIE_SQL_2026, expression: score}]}
+        datatype: Decimal
+      - name: lifecycle_published_to_marketplace_at
+        expression: {dialects: [{dialect: OSSIE_SQL_2026, expression: lifecycle_published_to_marketplace_at}]}
+        datatype: DateTimeTz
+        dimension: {is_time: true}
+      - name: score_band
+        description: The band of the latest Data Product Score.
+        expression:
+          dialects:
+            - dialect: OSSIE_SQL_2026
+              expression: >-
+                CASE WHEN score >= 0.8 THEN 'high' WHEN score >= 0.5 THEN 'medium'
+                WHEN score IS NOT NULL THEN 'low' ELSE 'not-scored' END
+        datatype: String
+        dimension: {is_time: false}
+        custom_extensions:
+          - vendor_name: ENTROPY_DATA
+            data: '{"values": ["high", "medium", "low", "not-scored"], "sequential": "descending", "neutral": ["not-scored"], "colors": {"high": "#16a34a"}}'

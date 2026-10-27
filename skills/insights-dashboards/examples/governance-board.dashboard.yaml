@@ -1,0 +1,134 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: governance-board
+  annotations:
+    entropy-data.com/owner: data-governance
+    entropy-data.com/visible-to: leadership, data-governance
+spec:
+  display:
+    name: Governance board
+    description: The KPIs the governance board reviews each month.
+  duration: 90d
+  variables:
+    - kind: ListVariable
+      spec:
+        name: domain
+        display: {name: Domain}
+        allowAllValue: true
+        plugin: {kind: EntropyDataDomainVariable}
+  panels:
+    takeaways:
+      kind: Panel
+      spec:
+        display: {name: Takeaways}
+        plugin:
+          kind: Markdown
+          spec:
+            text: "**Reuse** grows in every domain. Certification still lags in Sales."
+    well_scored:
+      kind: Panel
+      spec:
+        plugin: {kind: StatChart, spec: {calculation: last-number}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: governance_kpis.well_scored}}}
+        links:
+          - {name: Data Product Score, url: /governance/dataproducts/score}
+    active_share:
+      kind: Panel
+      spec:
+        display: {name: Active data products}
+        plugin: {kind: StatChart, spec: {calculation: last-number}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.active_data_products}}}
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.data_products}}}
+    published:
+      kind: Panel
+      spec:
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            querySettings:
+              - {queryIndex: 0, colorMode: fixed, colorValue: "#4f46e5"}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: governance_kpis.published}}}
+    time_to_insights:
+      kind: Panel
+      spec:
+        plugin:
+          kind: BarChart
+          spec:
+            calculation: last-number
+            orientation: vertical
+            thresholds:
+              mode: absolute
+              steps:
+                - {value: 75, color: "#ef4444", name: Over 75 days}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.time_to_insights_days, groupBy: team}}}
+    certified_by_team:
+      kind: Panel
+      spec:
+        plugin: {kind: BarChart, spec: {calculation: last-number}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: EntropyDataMetricQuery
+                spec: {metric: entropy_data_marketplace_analytics.certified_data_products, groupBy: team, stackBy: data_product.certification}
+    score_by_team:
+      kind: Panel
+      spec:
+        display: {name: Data Product Score by team}
+        plugin: {kind: Table, spec: {}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.average_score, groupBy: team}}}
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.active_data_products}}}
+    score_bands:
+      kind: Panel
+      spec:
+        plugin: {kind: PieChart, spec: {calculation: last-number}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: governance_kpis.published_to_date, groupBy: data_product.score_band}}}
+    access_funnel:
+      kind: Panel
+      spec:
+        display: {name: From request to access}
+        plugin: {kind: FunnelChart, spec: {calculation: last-number}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.access_requests, groupBy: access_agreement.access_stage}}}
+    time_to_market:
+      kind: Panel
+      spec:
+        plugin: {kind: ScatterChart, spec: {}}
+        queries:
+          - kind: TimeSeriesQuery
+            spec: {plugin: {kind: EntropyDataMetricQuery, spec: {metric: entropy_data_marketplace_analytics.time_to_market_days, groupBy: team}}}
+  layouts:
+    - kind: Grid
+      spec:
+        display: {title: Summary}
+        items:
+          - {x: 0, y: 0, width: 12, height: 3, content: {$ref: '#/spec/panels/takeaways'}}
+          - {x: 12, y: 0, width: 6, height: 3, content: {$ref: '#/spec/panels/well_scored'}}
+          - {x: 18, y: 0, width: 6, height: 3, content: {$ref: '#/spec/panels/active_share'}}
+    - kind: Grid
+      spec:
+        display: {title: Trends, collapse: {open: true}}
+        items:
+          - {x: 0, y: 0, width: 12, height: 8, content: {$ref: '#/spec/panels/published'}}
+          - {x: 12, y: 0, width: 12, height: 8, content: {$ref: '#/spec/panels/time_to_insights'}}
+          - {x: 0, y: 8, width: 12, height: 8, content: {$ref: '#/spec/panels/certified_by_team'}}
+          - {x: 12, y: 8, width: 12, height: 8, content: {$ref: '#/spec/panels/score_by_team'}}
+          - {x: 0, y: 16, width: 8, height: 8, content: {$ref: '#/spec/panels/score_bands'}}
+          - {x: 8, y: 16, width: 8, height: 8, content: {$ref: '#/spec/panels/access_funnel'}}
+          - {x: 16, y: 16, width: 8, height: 8, content: {$ref: '#/spec/panels/time_to_market'}}
